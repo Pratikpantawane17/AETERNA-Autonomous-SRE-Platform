@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  alert-simulator:
+    build: .
+    ports:
+      - "8050:8050"
+    environment:
+      - AETERNA_CORE_URL=http://aeterna-core:8000
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - aeterna-network
+    restart: unless-stopped
+
+networks:
+  aeterna-network:
+    external: true
