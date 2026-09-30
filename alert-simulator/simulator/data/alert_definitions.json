@@ -1,0 +1,106 @@
+{
+  "high_cpu": {
+    "metrics": ["percentage", "cores_affected", "duration_seconds"],
+    "thresholds": {"low": 60, "medium": 75, "high": 85, "critical": 95}
+  },
+  "latency_spike": {
+    "metrics": ["latency_ms", "p95_latency", "error_rate"],
+    "thresholds": {"low": 100, "medium": 500, "high": 1000, "critical": 5000}
+  },
+  "disk_full": {
+    "metrics": ["usage_percent", "free_gb", "growth_rate_mb_s"],
+    "thresholds": {"low": 70, "medium": 80, "high": 90, "critical": 95}
+  },
+  "auth_failure": {
+    "metrics": ["failed_attempts", "unique_ips", "lockouts"],
+    "thresholds": {"low": 10, "medium": 50, "high": 200, "critical": 1000}
+  },
+  "security_group": {
+    "metrics": ["unauthorized_changes", "open_ports", "exposed_resources"],
+    "thresholds": {"low": 1, "medium": 5, "high": 20, "critical": 50}
+  },
+  "ssl_expiry": {
+    "metrics": ["days_remaining", "affected_domains"],
+    "thresholds": {"low": 30, "medium": 14, "high": 7, "critical": 1}
+  },
+  "api_rate_limit": {
+    "metrics": ["requests_blocked", "throttle_percentage", "api_endpoints"],
+    "thresholds": {"low": 100, "medium": 1000, "high": 5000, "critical": 20000}
+  },
+  "high_memory": {
+    "metrics": ["ram_usage_percent", "swap_usage_percent", "page_faults"],
+    "thresholds": {"low": 75, "medium": 85, "high": 90, "critical": 98}
+  },
+  "iam_breach": {
+    "metrics": ["unusual_logins", "privilege_escalations", "stale_keys_used"],
+    "thresholds": {"low": 1, "medium": 5, "high": 15, "critical": 50}
+  },
+  "autoscale_fail": {
+    "metrics": ["failed_launches", "capacity_deficit", "pending_instances"],
+    "thresholds": {"low": 1, "medium": 3, "high": 8, "critical": 20}
+  },
+  "fraud_detected": {
+    "metrics": ["suspicious_transactions", "value_at_risk", "accounts_flagged"],
+    "thresholds": {"low": 5, "medium": 20, "high": 100, "critical": 500}
+  },
+  "data_breach": {
+    "metrics": ["records_exposed", "sensitive_tables_accessed", "exfiltration_mb"],
+    "thresholds": {"low": 10, "medium": 100, "high": 1000, "critical": 10000}
+  },
+  "dns_failure": {
+    "metrics": ["lookup_timeouts", "nxdomain_responses", "query_latency_ms"],
+    "thresholds": {"low": 50, "medium": 200, "high": 1000, "critical": 5000}
+  },
+  "cart_abandoned": {
+    "metrics": ["abandonment_rate_percent", "lost_revenue", "items_left"],
+    "thresholds": {"low": 10, "medium": 25, "high": 50, "critical": 75}
+  },
+  "inventory_low": {
+    "metrics": ["items_below_threshold", "stockout_risk_percent", "replenishment_delay"],
+    "thresholds": {"low": 50, "medium": 200, "high": 500, "critical": 1000}
+  },
+  "network_timeout": {
+    "metrics": ["dropped_packets", "connection_resets", "timeout_count"],
+    "thresholds": {"low": 100, "medium": 500, "high": 2000, "critical": 10000}
+  },
+  "snapshot_failed": {
+    "metrics": ["failed_backups", "stale_days", "volume_size_gb"],
+    "thresholds": {"low": 1, "medium": 2, "high": 5, "critical": 10}
+  },
+  "db_connection": {
+    "metrics": ["pool_exhaustion", "active_connections", "deadlocks"],
+    "thresholds": {"low": 20, "medium": 50, "high": 90, "critical": 100}
+  },
+  "cost_spike": {
+    "metrics": ["daily_spend", "percentage_increase", "anomalous_resources"],
+    "thresholds": {"low": 10, "medium": 25, "high": 50, "critical": 100}
+  },
+  "pod_crash": {
+    "metrics": ["restart_count", "oom_kills", "crashloop_backoff"],
+    "thresholds": {"low": 2, "medium": 5, "high": 15, "critical": 50}
+  },
+  "hl7_parse_error": {
+    "metrics": ["failed_messages", "format_errors", "queue_depth"],
+    "thresholds": {"low": 5, "medium": 20, "high": 100, "critical": 500}
+  },
+  "compliance_breach": {
+    "metrics": ["policy_violations", "unencrypted_resources", "public_buckets"],
+    "thresholds": {"low": 1, "medium": 5, "high": 10, "critical": 25}
+  },
+  "backup_failure": {
+    "metrics": ["failed_jobs", "data_unprotected_gb", "time_since_last_success_hrs"],
+    "thresholds": {"low": 1, "medium": 6, "high": 24, "critical": 72}
+  },
+  "report_failure": {
+    "metrics": ["delayed_reports", "query_timeouts", "data_inconsistencies"],
+    "thresholds": {"low": 2, "medium": 10, "high": 30, "critical": 100}
+  },
+  "hipaa_violation": {
+    "metrics": ["phi_exposed", "unauthorized_access", "audit_log_failures"],
+    "thresholds": {"low": 1, "medium": 5, "high": 20, "critical": 100}
+  },
+  "payment_failure": {
+    "metrics": ["declined_txns", "gateway_timeouts", "revenue_impact"],
+    "thresholds": {"low": 10, "medium": 50, "high": 200, "critical": 1000}
+  }
+}

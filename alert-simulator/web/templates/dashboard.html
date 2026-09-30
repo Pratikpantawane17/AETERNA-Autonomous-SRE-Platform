@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aeterna Alert Simulator</title>
+    <!-- Modern Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="glass-panel">
+            <div class="logo-area">
+                <div class="status-indicator" id="connection-status"></div>
+                <h1>Aeterna Simulator</h1>
+            </div>
+            <div class="controls-area">
+                <button id="toggle-sim-btn" class="btn btn-primary">Start Simulation</button>
+                <div class="interval-control">
+                    <label>Interval (<span id="interval-val">5</span>s)</label>
+                    <input type="range" id="interval-slider" min="1" max="60" value="5">
+                </div>
+                <button id="kill-switch-btn" class="btn btn-danger">KILL SWITCH O/I</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="dashboard-grid">
+            
+            <!-- AI Mode Row -->
+            <div class="ai-mode-container glass-panel">
+                <div class="ai-header">
+                    <span class="ai-badge">AI ENABLED</span>
+                    <h3>Intelligent Alert Generation</h3>
+                    <p>Describe a scenario to generate realistic, correlated alerts.</p>
+                </div>
+                <div class="ai-input-wrapper">
+                    <input type="text" id="ai-prompt" placeholder="e.g. 'Simulate a database deadlock'...">
+                    <div class="source-select">
+                        <select id="ai-source">
+                            <option value="direct">Direct Ingest</option>
+                            <option value="prometheus">Prometheus Exporter</option>
+                            <option value="sdk">Sovereign SDK</option>
+                        </select>
+                    </div>
+                    <button id="btn-ai-generate" class="btn btn-ai">
+                        <span class="btn-text">Generate with AI</span>
+                        <div class="spinner" id="ai-spinner" style="display: none;"></div>
+                    </button>
+                    <button id="btn-ai-stream" class="btn btn-secondary">
+                        Enable AI Stream
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Left Column: Stats & Charts -->
+            <div class="col-left">
+                <!-- Stats Row -->
+                <div class="stats-grid">
+                    <div class="stat-card glass-panel">
+                        <h3>Total Generated</h3>
+                        <div class="stat-value" id="stat-total">0</div>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <h3>Active Services</h3>
+                        <div class="stat-value">{{ services | length }}</div>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <h3>Sim Status</h3>
+                        <div class="stat-value" id="stat-sim">Stopped</div>
+                    </div>
+                </div>
+
+                <!-- Chart Row -->
+                <div class="chart-container glass-panel">
+                    <h3>Alert Distribution</h3>
+                    <canvas id="distributionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Middle Column: Live Feed -->
+            <div class="col-mid">
+                <div class="feed-container glass-panel">
+                    <div class="feed-header">
+                        <h3>Live Feed</h3>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="auto-scroll" checked>
+                            <span class="slider"></span> Auto-scroll
+                        </label>
+                    </div>
+                    <div class="table-wrapper">
+                        <table id="alerts-table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Severity</th>
+                                    <th>Type</th>
+                                    <th>Service</th>
+                                </tr>
+                            </thead>
+                            <tbody id="alerts-body">
+                                <!-- Alerts injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Manual Generator -->
+            <div class="col-right">
+                <div class="generator-panel glass-panel">
+                    <h3>Manual Alert Generator</h3>
+                    <form id="generate-form">
+                        <div class="form-group">
+                            <label for="alert-type">Alert Type</label>
+                            <select id="alert-type" required>
+                                {% for t in alert_types %}
+                                <option value="{{ t }}">{{ t | replace('_', ' ') | title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="alert-severity">Severity</label>
+                            <select id="alert-severity" required>
+                                {% for s in severities %}
+                                <option value="{{ s }}">{{ s | title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="alert-service">Service</label>
+                            <select id="alert-service" required>
+                                {% for s in services %}
+                                <option value="{{ s }}">{{ s }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="alert-source">Ingestion Source</label>
+                            <select id="alert-source">
+                                <option value="direct">Direct Ingest</option>
+                                <option value="prometheus">Prometheus Exporter</option>
+                                <option value="sdk">Sovereign SDK</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Base Metric Multiplier (<span id="metric-val">100</span>%)</label>
+                            <input type="range" id="metric-slider" min="10" max="200" value="100">
+                            <small>Adjusts standard metric severity manually</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-secondary w-100">Inject Alert</button>
+                    </form>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Init global context from python to JS -->
+    <script>
+        window.APP_CONTEXT = {
+            severities: {{ severities | tojson }}
+        };
+    </script>
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+alert_type,severity,service
+high_cpu,critical,payment-service
+disk_full,high,db-cluster
+api_failure,medium,auth-service
+service_down,critical,frontend-app
+memory_leak,high,redis-cache
+high_error_rate,high,cart-service
