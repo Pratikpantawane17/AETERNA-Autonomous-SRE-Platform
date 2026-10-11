@@ -7,6 +7,7 @@ import AlertTypeBreakdown from '../components/dashboard/AlertTypeBreakdown';
 import ChronicServices from '../components/dashboard/ChronicServices';
 import LiveIncidentFeed from '../components/dashboard/LiveIncidentFeed';
 import LearningLoopIndicator from '../components/dashboard/LearningLoopIndicator';
+import NodeStats from '../components/dashboard/NodeStats';
 import KillSwitch from '../components/controls/KillSwitch';
 // import InfraGlobe from '../components/globe/InfraGlobe';
 
@@ -88,6 +89,8 @@ export default function Dashboard() {
         error={error}
         onRetry={refetch}
       />
+
+      <NodeStats />
 
       {/* Row 2: Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">

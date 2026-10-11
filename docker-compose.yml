@@ -67,5 +67,32 @@ services:
       - backend
     restart: unless-stopped
 
+  k8s-backend:
+    build: ./k8s-backend
+    env_file: ./k8s-backend/.env
+    environment:
+      DATABASE_URL: postgresql://aeterna:aeterna@postgres:5432/aeterna
+      AETERNA_CORE_URL: http://backend:8000
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    volumes:
+      - ./kubeconfig-docker:/root/.kube/config:ro
+      - /home/shravan/.minikube:/home/shravan/.minikube:ro
+    networks:
+      - default
+      - minikube_net
+    restart: unless-stopped
+
+networks:
+  default:
+  minikube_net:
+    external: true
+    name: minikube
+
 volumes:
   postgres_data:

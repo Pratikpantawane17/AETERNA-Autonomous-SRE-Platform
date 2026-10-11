@@ -341,10 +341,12 @@ cp alert-simulator/.env.example alert-simulator/.env
 
 Open both files and paste in your API keys. The `.env` files are git-ignored and never committed.
 
-### 3. Run everything
+### 3. Start AETERNA core infrastructure
+
+Start the database, memory store, AI backends, and dashboard:
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
 | Service | URL |
@@ -352,10 +354,58 @@ docker compose up --build
 | 📊 Dashboard | http://localhost:3000 |
 | ⚙️ Backend API | http://localhost:8000 |
 | 📚 Interactive API docs | http://localhost:8000/docs |
-| ❤️ Health check | http://localhost:8000/health |
-| 🎛️ Alert Simulator | http://localhost:8050 |
+| 🛡️ K8s Backend | http://localhost:8001 |
 
-Stop with `docker compose down`.
+### 4. Setup Kubernetes & Deploy Sample App
+
+AETERNA includes a live Kubernetes integration and a vulnerable sample app to test real-world remediations.
+
+1. **Start Minikube with metrics enabled:**
+   ```bash
+   minikube start
+   minikube addons enable metrics-server
+   ```
+2. **Build the sample app directly into Minikube:**
+   ```bash
+   eval $(minikube docker-env)
+   cd sample-app
+   docker build -t aeterna-sample-app:latest .
+   ```
+3. **Deploy the sample app:**
+   ```bash
+   cd ..
+   kubectl apply -f sample-app/k8s/
+   ```
+
+Wait for the pods to transition to `Running` state:
+```bash
+kubectl get pods -n aeterna-sample -w
+```
+
+### 5. Run the Load Test & View the Dashboard
+
+Generate traffic to trigger the Horizontal Pod Autoscaler and raise `High CPU` incidents.
+
+1. **Forward the Sample App Service:**
+   ```bash
+   kubectl port-forward -n aeterna-sample svc/aeterna-sample-app 9090:80
+   ```
+   *(This ensures a stable, reliable endpoint on `http://127.0.0.1:9090`)*
+
+2. **Start the Locust load generator:**
+   ```bash
+   cd load-test
+   pip install -r requirements.txt
+   locust -f locustfile.py --host=http://127.0.0.1:9090
+   ```
+
+3. **Trigger the incident:**
+   - Open [http://localhost:8089](http://localhost:8089) in your browser.
+   - Enter `50` users and a spawn rate of `5`.
+   - Click **Start swarming**.
+   - Open your AETERNA dashboard at [http://localhost:3000](http://localhost:3000). You will see real-time Node stats at the top, and shortly after, an incident will automatically populate on the dashboard as the AI detects the load, decides to scale up, and executes the remediation.
+
+Stop all Docker services with `docker compose down`.
 
 <details>
 <summary><b>Run without Docker</b> (backend + frontend + simulator in three terminals)</summary>
@@ -563,9 +613,9 @@ Built by **ByteCoders** for the **WSI AI-thon 2026** hackathon, on the problem s
 | Name | Role |
 |---|---|
 | **Pratik Pantawane** | Team Lead |
-| **Arth Rai** | Team member |
-| **Sanskar Sontakke** | Team member |
-| **Siddhi Sapkal** | Team member |
+| **Shravan Vijaykar** | Team member |
+| **Harshwardhan Mane** | Team member |
+| **Atharv Bhoi** | Team member |
 
 ---
 
@@ -573,6 +623,5 @@ Built by **ByteCoders** for the **WSI AI-thon 2026** hackathon, on the problem s
 
 If you found this project interesting, consider giving it a ⭐
 
-**Built with ❤️ by ByteCoders**
 
 </div>

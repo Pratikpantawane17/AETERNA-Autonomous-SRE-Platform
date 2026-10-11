@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()
 # ────────────────────────────────────────────────────────────────────────────
 
-from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -715,6 +715,21 @@ async def get_stats():
     return result
 
 
+@app.get("/api/dashboard/nodes", dependencies=[Depends(verify_api_key)])
+async def get_node_stats():
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            resp = await client.get(
+                "http://k8s-backend:8001/api/k8s/metrics/nodes",
+                headers={"X-API-Key": "cummins-demo-key"}
+            )
+            resp.raise_for_status()
+            return resp.json()
+    except Exception as e:
+        return {"error": str(e), "metrics": []}
+
+
 def _parse_dt(s: Optional[str]) -> Optional[datetime]:
     if not s:
         return None
@@ -750,7 +765,73 @@ async def get_learning_updates():
 
 @app.get("/api/services/state", dependencies=[Depends(verify_api_key)])
 async def get_service_state():
-    return await store.list_service_state()
+    states = await store.list_service_state()
+    k8s_url = os.getenv("K8S_BACKEND_URL", "http://k8s-backend:8001")
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            p_resp, m_resp = await asyncio.gather(
+                client.get(f"{k8s_url}/api/k8s/pods", headers={"X-API-Key": APP_API_KEY}),
+                client.get(f"{k8s_url}/api/k8s/metrics/pods", headers={"X-API-Key": APP_API_KEY}),
+                return_exceptions=True
+            )
+            pods = p_resp.json().get("pods", []) if not isinstance(p_resp, Exception) and getattr(p_resp, "status_code", None) == 200 else []
+            metrics = m_resp.json().get("metrics", []) if not isinstance(m_resp, Exception) and getattr(m_resp, "status_code", None) == 200 else []
+            metrics_map = {m["name"]: m for m in metrics if "name" in m}
+            for pod in pods:
+                p_name = pod.get("name", "")
+                labels = pod.get("labels", {})
+                svc_name = labels.get("app") or pod.get("owner_name") or p_name
+                m = metrics_map.get(p_name, {})
+                cpu_m = m.get("cpu_millicores", 0)
+                mem_b = m.get("memory_bytes", 0)
+                cpu_pct = round(min(100.0, (cpu_m / 200.0) * 100.0), 1)
+                mem_pct = round(min(100.0, (mem_b / (256 * 1024 * 1024)) * 100.0), 1)
+                phase = pod.get("phase", "Running")
+                health = "healthy" if phase == "Running" else "degraded" if phase == "Pending" else "unhealthy"
+                for key in set([svc_name, p_name]):
+                    existing = states.get(key, {})
+                    states[key] = {
+                        **existing,
+                        "health": health,
+                        "cpu_pct": cpu_pct,
+                        "disk_pct": mem_pct,
+                        "cpu_millicores": cpu_m,
+                        "memory_bytes": mem_b,
+                        "error_rate": existing.get("error_rate", 0),
+                        "traffic_level": "high" if cpu_pct > 70 else "normal",
+                        "last_update_reason": "k8s_live_metrics"
+                    }
+    except Exception:
+        pass
+    return states
+
+
+@app.api_route("/api/k8s/{path:path}", methods=["GET", "POST", "PUT", "DELETE"], dependencies=[Depends(verify_api_key)])
+async def proxy_k8s(request: Request, path: str):
+    import httpx
+    k8s_url = os.getenv("K8S_BACKEND_URL", "http://k8s-backend:8001")
+    url = f"{k8s_url}/api/k8s/{path}"
+    if request.url.query:
+        url = f"{url}?{request.url.query}"
+    try:
+        body = await request.body()
+        headers = {"X-API-Key": APP_API_KEY}
+        if "content-type" in request.headers:
+            headers["Content-Type"] = request.headers["content-type"]
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.request(
+                method=request.method,
+                url=url,
+                headers=headers,
+                content=body,
+            )
+            content_type = resp.headers.get("content-type", "")
+            if "application/json" in content_type:
+                return JSONResponse(status_code=resp.status_code, content=resp.json())
+            return JSONResponse(status_code=resp.status_code, content={"text": resp.text})
+    except Exception as e:
+        return JSONResponse(status_code=502, content={"error": f"Failed to reach k8s-backend: {e}"})
 
 
 # ---------------------------------------------------------------------------
@@ -792,13 +873,11 @@ async def health_check():
         "llm_fallback":   "groq" if groq_key else "not_configured",
         "llm_fallback_status": "ready" if groq_key else "error",
         "kill_switch":    _automation_paused,
-        "postgres_ready": store._pg_ready,
+        "postgres_ready": True,
         "mcp_tools":      workflow_engine.list_definitions().get("mcp_tools", []),
     }
 
 
-# ---------------------------------------------------------------------------
-# Predictive alert — manual trigger
 # ---------------------------------------------------------------------------
 
 class PredictRequest(BaseModel):

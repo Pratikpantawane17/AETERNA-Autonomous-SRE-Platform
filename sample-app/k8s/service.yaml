@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: aeterna-sample-app
+  namespace: aeterna-sample
+  labels:
+    app: aeterna-sample-app
+spec:
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: aeterna-sample-app
+  type: ClusterIP
